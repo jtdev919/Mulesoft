@@ -1,0 +1,70 @@
+name: MuleSoft DevOps Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout code from the repository
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # Set up Java and Maven
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+
+      - name: Set up Maven
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+
+      # Build the MuleSoft application
+      - name: Build and Package
+        run: mvn clean package
+
+      # Upload the build artifact
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: mule-artifact
+          path: target/*.jar
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      # Checkout code again
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # Install Anypoint CLI
+      - name: Install Anypoint CLI
+        run: |
+          curl -L https://anypoint.mulesoft.com/downloads/cliwrapper/mulecli-linux.tar.gz | tar -xz
+          sudo mv mule /usr/local/bin/mule
+
+      # Deploy to Anypoint Platform
+      - name: Deploy to Anypoint
+        env:
+          ANYPOINT_USERNAME: ${{ secrets.ANYPOINT_USERNAME }}
+          ANYPOINT_PASSWORD: ${{ secrets.ANYPOINT_PASSWORD }}
+        run: |
+          mule login --username $ANYPOINT_USERNAME --password $ANYPOINT_PASSWORD --environment sandbox
+          mule deploy application \
+            --artifact target/your-app.jar \
+            --target CloudHub \
+            --runtime 4.4.0 \
+            --workers 1 \
+            --workerType Micro

@@ -1,0 +1,25 @@
+name: Test MuleSoft Authentication
+
+on:
+  workflow_dispatch: # Allows the workflow to be manually triggered.
+
+jobs:
+  test-authentication:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Authenticate with MuleSoft Anypoint Platform
+      - name: Authenticate with Anypoint Platform
+        env:
+          ANYPOINT_CLIENT_ID: ${{ secrets.ANYPOINT_CLIENT_ID }}
+          ANYPOINT_CLIENT_SECRET: ${{ secrets.ANYPOINT_CLIENT_SECRET }}
+        run: |
+          mule login --clientId $CLIENT_ID --clientSecret $CLIENT_SECRET --environment sandbox
+
+      # Step 2: Check Authentication Status
+      - name: Verify Authentication
+        run: mule status
+
+      # Step 3 (Optional): List Deployed Applications
+      - name: List Applications
+        run: mule runtime-mgr list applications
